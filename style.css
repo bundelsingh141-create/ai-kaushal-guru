@@ -1,0 +1,107 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+}
+
+.sidebar {
+    width: 220px;
+    background: #020617;
+    padding: 20px;
+    border-right: 1px solid #1e293b;
+}
+
+.sidebar button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: #1e293b;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.message {
+    max-width: 70%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.user {
+    background: #2563eb;
+    margin-left: auto;
+}
+
+.bot {
+    background: #1e293b;
+    margin-right: auto;
+    box-shadow: 0 0 10px #38bdf8;
+}
+
+.input-bar {
+    display: flex;
+    padding: 10px;
+    background: #020617;
+}
+
+.input-bar input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+}
+
+.input-bar button {
+    margin-left: 8px;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+#history {
+    margin-top: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 8px;
+    background: #1e293b;
+    margin-top: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.history-item:hover {
+    background: #334155;
+}
+
+.message {
+    max-width: 70%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap; /* 🔥 IMPORTANT */
+}
