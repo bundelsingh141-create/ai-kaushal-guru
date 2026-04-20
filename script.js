@@ -1,10 +1,10 @@
 const chatBox = document.getElementById("chat-box");
 
 let chats = {};
-let currentChat = "chat1";
+let currentChat = "";
 let chatTitles = {};
 
-// ================== STORAGE ==================
+// ================= STORAGE =================
 function saveToLocal() {
     localStorage.setItem("chats", JSON.stringify(chats));
     localStorage.setItem("titles", JSON.stringify(chatTitles));
@@ -18,48 +18,71 @@ function loadFromLocal() {
     if (savedTitles) chatTitles = JSON.parse(savedTitles);
 }
 
-// ================== MESSAGE ==================
-function addMessage(text, className) {
-    const div = document.createElement("div");
-    div.className = "message " + className;
-
-    // typing effect
+// ================= TYPING EFFECT =================
+function typeText(div, text) {
     let i = 0;
-    function type() {
+    div.innerHTML = "";
+
+    function typing() {
         if (i < text.length) {
             div.innerHTML += text.charAt(i);
             i++;
-            setTimeout(type, 10);
+            setTimeout(typing, 10);
         }
     }
-    type();
+    typing();
+}
+
+// ================= MESSAGE =================
+function addMessage(text, className) {
+    if (!chats[currentChat]) chats[currentChat] = [];
+
+    const div = document.createElement("div");
+    div.className = "message " + className;
 
     chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
 
-    // save memory
+    // ✨ typing effect
+    typeText(div, text);
+
+    // save message
     chats[currentChat].push({ text, className });
     saveToLocal();
 
-    // auto title
+    // 🧠 auto title
     if (!chatTitles[currentChat]) {
         let lower = text.toLowerCase();
 
-        if (lower.includes("science")) {
-            chatTitles[currentChat] = "🌱 Science Projects";
-        } else if (lower.includes("arduino")) {
-            chatTitles[currentChat] = "🔧 Arduino Ideas";
-        } else if (lower.includes("ai")) {
-            chatTitles[currentChat] = "🤖 AI Projects";
-        } else {
-            chatTitles[currentChat] = "💬 General Chat";
-        }
+        if (lower.includes("science")) chatTitles[currentChat] = "🌱 Science";
+        else if (lower.includes("arduino")) chatTitles[currentChat] = "🔧 Arduino";
+        else if (lower.includes("ai")) chatTitles[currentChat] = "🤖 AI";
+        else chatTitles[currentChat] = "💬 Chat";
     }
 
     renderHistory();
+
+    // scroll
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 📋 right click menu
+    div.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+
+        let action = prompt("1 = Copy\n2 = Delete");
+
+        if (action == "1") {
+            navigator.clipboard.writeText(text);
+        }
+
+        if (action == "2") {
+            div.remove();
+            chats[currentChat] = chats[currentChat].filter(m => m.text !== text);
+            saveToLocal();
+        }
+    });
 }
 
-// ================== SEND ==================
+// ================= SEND =================
 function sendMessage() {
     const input = document.getElementById("input");
     const message = input.value.trim();
@@ -69,66 +92,81 @@ function sendMessage() {
     addMessage(message, "user");
 
     // 🤖 thinking
-    const thinkingDiv = document.createElement("div");
-    thinkingDiv.className = "message bot";
-    thinkingDiv.innerHTML = "🤖 Soch raha hu...";
-    chatBox.appendChild(thinkingDiv);
+    const thinking = document.createElement("div");
+    thinking.className = "message bot";
+    thinking.innerHTML = "🤖 <span class='dot'>.</span><span class='dot'>.</span><span class='dot'>.</span>";
+    chatBox.appendChild(thinking);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     fetch("/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message })
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ message })
     })
     .then(res => res.text())
     .then(data => {
-        thinkingDiv.remove();
+        thinking.remove();
         addMessage(data, "bot");
+    })
+    .catch(() => {
+        thinking.innerHTML = "⚠️ Error aa gaya";
     });
 
     input.value = "";
 }
 
-// ================== HISTORY ==================
+// ================= HISTORY =================
 function renderHistory() {
-    const historyDiv = document.getElementById("history");
-    historyDiv.innerHTML = "";
+    const history = document.getElementById("history");
+    history.innerHTML = "";
 
-    Object.keys(chats).forEach(chatId => {
+    Object.keys(chats).forEach(id => {
         const div = document.createElement("div");
         div.className = "history-item";
-        div.innerText = chatTitles[chatId] || "💬 New Chat";
+        div.innerText = chatTitles[id] || "💬 Chat";
 
-        div.onclick = () => loadChat(chatId);
-        historyDiv.appendChild(div);
+        div.onclick = () => loadChat(id);
+
+        history.appendChild(div);
     });
 }
 
-function loadChat(chatId) {
-    currentChat = chatId;
+function loadChat(id) {
+    currentChat = id;
     chatBox.innerHTML = "";
 
-    chats[chatId].forEach(msg => {
+    chats[id].forEach(msg => {
         const div = document.createElement("div");
         div.className = "message " + msg.className;
         div.innerHTML = msg.text;
         chatBox.appendChild(div);
     });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ================== CHAT CONTROL ==================
+// ================= NEW CHAT =================
 function newChat() {
-    currentChat = "chat" + Date.now();
+    currentChat = "chat_" + Date.now();
     chats[currentChat] = [];
     chatBox.innerHTML = "";
     renderHistory();
+    saveToLocal();
 }
 
+// ================= CLEAR CHAT =================
 function clearChat() {
     chatBox.innerHTML = "";
+    chats[currentChat] = [];
+    saveToLocal();
 }
 
+// ================= SAVE CHAT FILE =================
 function saveChat() {
-    const text = chatBox.innerText;
+    const text = chats[currentChat]
+        .map(m => `${m.className.toUpperCase()}: ${m.text}`)
+        .join("\n\n");
+
     const blob = new Blob([text], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -136,24 +174,29 @@ function saveChat() {
     a.click();
 }
 
-// ================== VOICE ==================
+// ================= VOICE =================
 function startMic() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Voice not supported");
+        return;
+    }
+
     const recognition = new webkitSpeechRecognition();
     recognition.lang = "en-IN";
 
-    recognition.onresult = function(event) {
+    recognition.onresult = function(e) {
         document.getElementById("input").value =
-            event.results[0][0].transcript;
+            e.results[0][0].transcript;
     };
 
     recognition.start();
 }
 
-// ================== ENTER KEY ==================
-document.addEventListener("DOMContentLoaded", function () {
+// ================= ENTER KEY =================
+document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("input");
 
-    input.addEventListener("keydown", function (e) {
+    input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
             sendMessage();
@@ -161,7 +204,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// ================== INIT ==================
+// ================= INIT =================
 loadFromLocal();
-newChat();
+
+if (Object.keys(chats).length === 0) {
+    newChat();
+} else {
+    currentChat = Object.keys(chats)[0];
+}
+
 renderHistory();
